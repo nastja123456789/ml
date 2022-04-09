@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
@@ -21,29 +20,21 @@ class MachineLearningApp extends StatefulWidget {
 }
 
 class _MachineLearningAppState extends State {
-
+  final ImagePicker _picker = ImagePicker();
   File _image;
   List _result;
 
   @override
   void initState() {
     super.initState();
-    loadModel().then((ouput) {
+    loadModelData().then((ouput) {
       setState(() {});
     });
   }
 
-  loadModel() async {
+  loadModelData() async {
     await Tflite.loadModel(
-      model: "assets/model_unquant.tflite",
-      labels: "assets/labels.txt",
-    );
-  }
-
-  @override
-  void dispose() {
-    Tflite.close();
-    super.dispose();
+        model: 'asserts/model_unquant.tflite', labels: 'asserts/labels.txt');
   }
 
   @override
@@ -61,18 +52,37 @@ class _MachineLearningAppState extends State {
               galleryOrCamera(Icons.photo_album, ImageSource.gallery),
             ]),
             SizedBox(height: 50),
-
             _result != null
                 ? Text(
-              "${_result[0]["label"]}",
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 20.0,
-                background: Paint()..color = Colors.white,
+              'It\'s a ${_result[0]['label']}.',
+              style: GoogleFonts.openSansCondensed(
+                fontWeight: FontWeight.bold,
+                fontSize: 30,
               ),
             )
-                : Container(child: Text("пустое место")),
-
+                : Text(
+              '1. Select or Capture the image. \n2. Tap the submit button.',
+              style: GoogleFonts.openSans(fontSize: 16),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 30.0),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 60),
+                  elevation: 4,
+                  primary: Colors.grey[300],
+                ),
+                //  onPressed: () {},
+                onPressed: detectDogOrCat,
+                child: Text(
+                  'Submit',
+                  style: GoogleFonts.roboto(
+                    color: Colors.black,
+                    fontWeight: bold,
+                  ),
+                ),
+              ),
+            ),
             SizedBox(height: 45),
             Text(
               'androidride.com',
@@ -86,30 +96,31 @@ class _MachineLearningAppState extends State {
     );
   }
 
-  detectDogOrCat(File image) async {
-      var result = await Tflite.runModelOnImage(
-        path: image.path,
-        numResults: 2,
-        threshold: 0.5,
-        imageMean: 127.5,
-        imageStd: 127.5,
-      );
-      setState(() {
-        _result = result;
-      });
+  void detectDogOrCat() async {
+    if (_image != null) {
+      try {
+        _result = await Tflite.runModelOnImage(
+          path: _image.path,
+          numResults: 2,
+          threshold: 0.6,
+          imageMean: 127.5,
+          imageStd: 127.5,
+        );
+      } catch (e) {}
+
+      setState(() {});
+    }
   }
 
   _getImage(ImageSource imageSource) async {
 //accessing image from Gallery or Camera.
-    var image = await ImagePicker.pickImage(source: imageSource);
+    final XFile image = await _picker.pickImage(source: imageSource);
 //image is null, then return
     if (image == null) return;
-
     setState(() {
       _image = File(image.path);
-
+      _result = null;
     });
-    detectDogOrCat(image);
   }
 
   Widget testImage(size, image) {
